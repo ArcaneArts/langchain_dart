@@ -46,12 +46,12 @@ class RealtimeAPI extends RealtimeEventHandler {
   /// Whether to allow the API key to be used in the browser.
   final bool dangerouslyAllowAPIKeyInBrowser;
 
-  WebSocketChannel? _ws;
+  WebSocketChannel? rawWS;
   var _model = '';
   StreamSubscription<dynamic>? _logSubscription;
 
   /// Tells us whether or not the WebSocket is connected.
-  bool isConnected() => _ws != null;
+  bool isConnected() => rawWS != null;
 
   /// Connects to Realtime API Websocket Server.
   ///
@@ -70,14 +70,14 @@ class RealtimeAPI extends RealtimeEventHandler {
     final uri = Uri.parse('$url?model=$_model');
 
     try {
-      _ws = connectWebSocket(uri, apiKey);
+      rawWS = connectWebSocket(uri, apiKey);
 
       // Wait for the connection to be established
-      await _ws!.ready;
+      await rawWS!.ready;
 
       _log.info('Connected to "$url"');
 
-      _ws!.stream.listen(
+      rawWS!.stream.listen(
         (data) {
           final message = json.decode(data) as Map<String, dynamic>;
           receive(message);
@@ -127,9 +127,9 @@ class RealtimeAPI extends RealtimeEventHandler {
 
   /// Disconnects from Realtime API server.
   Future<void> disconnect() async {
-    if (_ws != null) {
-      await _ws!.sink.close(status.normalClosure);
-      _ws = null;
+    if (rawWS != null) {
+      await rawWS!.sink.close(status.normalClosure);
+      rawWS = null;
     }
     await _logSubscription?.cancel();
   }
@@ -161,7 +161,7 @@ class RealtimeAPI extends RealtimeEventHandler {
     await dispatch(RealtimeEventType.all, finalEvent);
 
     final data = json.encode(finalEvent.toJson());
-    _ws!.sink.add(data);
+    rawWS!.sink.add(data);
   }
 
   void _logEvent(
